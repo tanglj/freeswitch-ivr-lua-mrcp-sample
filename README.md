@@ -44,6 +44,7 @@ fs_cli
 ```bash
 mkdir -p /usr/local/freeswitch/storage
 ln -s /etc/freeswitch/ /usr/local/freeswitch/conf
+ln -s /var/log/freeswitch/ /usr/local/freeswitch/log
 ln -s /usr/share/freeswitch/scripts/ /usr/local/freeswitch/scripts
 ```
 
@@ -115,7 +116,45 @@ Shell执行`freeswitch -stop`或在FreeSWITCH控制台执行`shutdown`，再启�
 
 ### 拨号计划(dialplan)
 
+编辑`/usr/local/freeswitch/conf/dialplan/default.xml`，在content元素中添加一个新的extension
+
+```xml
+<extension name="stage1-prompt">
+    <condition field="destination_number" expression="^1101$">
+        <action application="lua" data="stage1-prompt.lua"/>
+    </condition>
+</extension>
+```
+
+新增的配置指定`1101`分机调用`Lua`模块，执行`stage1-prompt.lua`脚本
+
+保存后在FreeSWITCH控制台中，执行`reloadxml`使之生效
+
 ### Lua脚本
+
+在`/usr/local/freeswitch/scripts/`目录下新建`stage1-prompt.lua`脚本，内容如下：
+
+```lua
+-- 接通
+session:answer()
+
+-- 控制台打印日志
+session:consoleLog("INFO", "开始播放音频")
+
+-- 播放音频 “欢迎你来到新世界”
+session:streamFile("/usr/local/freeswitch/storage/stage1-test.wav")
+
+session:consoleLog("INFO", "结束播放音频")
+
+-- 挂机
+session:hangup()
+```
+
+`stage1-test.wav` 是存在于本地的文件
+
+使用软电话直接拨打1101，如果听到播报“欢迎你来到新世界”表明流程配置成功，在控制台应该同时可以看到两行由脚本插入的INFO级别日志
+
+FreeSWITCH Lua流程的更多写法可以参考：[官方Lua API](https://freeswitch.org/confluence/display/FREESWITCH/Lua+API+Reference)
 
 ## 四、调用百度云MRCP语音识别服务
 
