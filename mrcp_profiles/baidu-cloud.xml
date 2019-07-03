@@ -1,0 +1,15 @@
+<include>
+    <profile name="baidu-cloud" version="2">
+        <param name="server-ip" value="192.168.0.3"/>
+        <param name="server-port" value="9060"/>
+        <param name="client-ip" value="auto"/>
+        <param name="client-port" value="6021"/>
+        <param name="sip-transport" value="tcp"/>
+        <param name="ua-name" value="Freeswitch"/>
+        <param name="sdp-origin" value="Freeswitch"/>
+        <param name="rtp-ip" value="auto"/>
+        <param name="rtp-port-min" value="4400"/>
+        <param name="rtp-port-max" value="4419"/>
+        <param name="codecs" value="L16/96/8000"/>
+    </profile>
+</include>

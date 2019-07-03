@@ -19,6 +19,11 @@
 	<action application="lua" data="stage1-prompt.lua"/>
       </condition>
     </extension>
+    <extension name="stage2-collect">
+      <condition field="destination_number" expression="^1102$">
+	<action application="lua" data="stage2-collect.lua"/>
+      </condition>
+    </extension>
 
 <!-- 新添加的结束 -->
 
