@@ -24,6 +24,11 @@
 	<action application="lua" data="stage2-collect.lua"/>
       </condition>
     </extension>
+    <extension name="stage3-tts">
+      <condition field="destination_number" expression="^1103$">
+	<action application="lua" data="stage3-tts.lua"/>
+      </condition>
+    </extension>
 
 <!-- 新添加的结束 -->
 

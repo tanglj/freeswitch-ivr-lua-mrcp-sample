@@ -292,12 +292,92 @@ session:hangup()
 
 ![识别结果日志示例](images/screen-1.png)
 
-## 五、配置简单的语音IVR流程
+## 五、调用百度云语音合成服务
 
-### 基本的流程设计
+示例采用HTTP调用百度云TTS服务的方式
+
+### 获取Access Token
+
+调用百度HTTP接口需要使用鉴权，简单起见，参考[技术文档](https://ai.baidu.com/docs#/TTS-API/top)通过浏览器获取Access Token(有效期30天)，直接供测试使用
 
 ### HTTP语音合成调用
 
-<https://ai.baidu.com/docs#/TTS-API/top>
+获取了Token之后，可以通过浏览器测试调用，相关参数参看[官方文档](https://ai.baidu.com/docs#/TTS-API/top)，这里aue设置为6合成为WAV文件
+
+`http://tsn.baidu.com/text2audio?lan=zh&ctp=1&aue=6&cuid=12345&tok=<your_token>&tex=来自远方的问候`
+
+调用成功浏览器应当会播放音频，也可以保存为本地音频文件
+
+### Lua中调用语音合成服务
+
+这里采用调用HTTP接口合成并保存本地语音文件，然后再播报的方式
+
+- 配置dialplan
+
+在`/usr/local/freeswitch/conf/dialplan/default.xml`添加新的extension
+
+```xml
+<extension name="stage3-tts">
+    <condition field="destination_number" expression="^1103$">
+        <action application="lua" data="stage3-tts.lua"/>
+    </condition>
+</extension>
+```
+
+- 配置Lua
+
+先创建一个用于存储配置的`stage3-tts-conf.lua`，里面包含本机MAC(用作接口中的用户唯一标识)和前一步获取的Token
+
+```lua
+baidu_tocken = "your_token"
+MAC = "your_mac"
+```
+
+-- 脚本Lua
+
+```lua
+-- 接通
+session:answer()
+
+-- 导入http模块用以调用百度HTTP接口
+http = require("socket.http")
+
+-- 导入同目录下的配置文件，包含本机MAC和申请的百度Token
+require "stage3-tts-conf"
+
+-- 调用接口获得结果
+r,c,h,body=http.request("http://tsn.baidu.com/text2audio?lan=zh&ctp=1&aue=6&cuid=".. MAC .. "&tok=" .. baidu_tocken .. "&tex=来自远方的问候")
+
+-- 判断是否调用成功，如果成功写入到本地文件中
+is_call_baidu_api_success = false
+audio_path = "/usr/local/freeswitch/storage/" .. session:getVariable("uuid") .. ".wav" -- uuid是每通电话唯一的标识
+for i,v in pairs(h) do
+    if i == "content-type" and v == "audio/wav" then
+        is_call_baidu_api_success = true
+        f = io.open(audio_path, "wb")
+        f:write(r)
+        f:close()
+    end
+end
+
+-- 如果调用成功，播放写入本地的音频文件
+if is_call_baidu_api_success then
+    session:consoleLog("INFO", "播放音频：" .. audio_path)
+    session:streamFile(audio_path)
+else
+    session:consoleLog("INFO", "调用百度接口失败")
+end
+
+-- 挂机
+session:hangup()
+```
+
+如果调用成功，应该在电话接通后听到TTS合成的“来自远方的问候”，并且有对应的日志
+
+> 录音播报开始部分缺失，待解决
+
+## 六、配置简单的语音IVR流程
+
+### 基本的流程设计
 
 ### 交互流程
