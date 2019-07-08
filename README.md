@@ -78,7 +78,7 @@ ln -s /usr/share/freeswitch/scripts/ /usr/local/freeswitch/scripts
 
 - 重启FreeSWITCH
 
-Shell执行`freeswitch -stop`或在FreeSWITCH控制台执行`shutdown`，再启动
+Bash执行`freeswitch -stop`或在FreeSWITCH控制台执行`shutdown`，再启动
 
 ## 二、实现呼叫
 
@@ -92,7 +92,7 @@ Shell执行`freeswitch -stop`或在FreeSWITCH控制台执行`shutdown`，再启�
 
 - 注册分机
 
-在软电话中配置账号。
+在软电话中配置账号
 
 服务器，FreeSWITCH的IP:之前配置的端口
 
@@ -204,7 +204,7 @@ FreeSWITCH Lua流程的更多写法可以参考：[官方Lua API](https://freesw
 
 在`/usr/local/freeswitch/conf/mrcp_profiles/`目录新建文件`baidu-cloud.xml`
 
-仿照填写配置，其中`server-ip`是百度MRCP Server的IP，`server-port`是服务端口
+仿照填写配置，其中`server-ip`是百度MRCP Server的IP，`server-port`是服务端口(sip-port)
 
 ```xml
 <include>
@@ -254,7 +254,7 @@ session:answer()
 session:consoleLog("INFO", "开始播报识别")
 
 -- 播放音频并开启识别
-session:execute("play_and_detect_speech", "/usr/local/freeswitch/storage/stage1-test.wavdetect:unimrcp:baidu-cloud {start-input-timers=false,No-Input-Timeout=3000,Speech-Complete-Timeout=1200}http://192.168.0.1/grammars/not-exit.gram")
+session:execute("play_and_detect_speech", "/usr/local/freeswitch/storage/stage1-test.wavdetect:unimrcp:baidu-cloud {start-input-timers=false,No-Input-Timeout=3000,Speech-Complete-Timeout=1200}http://192.168.0.1/grammars/not-exist.gram")
 local result = session:getVariable('detect_speech_result')
 if result == nil then
     session:consoleLog("INFO", "引擎异常")
@@ -333,7 +333,7 @@ baidu_tocken = "your_token"
 MAC = "your_mac"
 ```
 
--- 脚本Lua
+- 脚本Lua
 
 ```lua
 -- 接通
@@ -378,6 +378,30 @@ session:hangup()
 
 ## 六、配置简单的语音IVR流程
 
+最后，通过一个简单的流程，展示搭建好的FreeSWITCH IVR环境所具有的功能
+
 ### 基本的流程设计
 
+以下是基本的流程设计：
+
+1. 电话接通后，首先提示用户“你好，请问有什么可以帮您的？”，等待输入
+
+2. 识别用户输入后，如果用户说的是“退出”，则提示“识别结果是退出，再见。”，挂机；如果是其他，则播报识别结果，并提示继续输入，不断循环
+
+3. 如果播报识别过程中调用TTS或ASR错误，则打印/播报错误信息并退出
+
+![Demo流程图](images/flow-1.png)
+
 ### 交互流程
+
+在具体的流程实现上，首先配置dialplan并使之生效、新建对应的Lua脚本文件，配置Lua可以使用上一步的
+
+在Lua脚本中，引入了一个第三方模块`xmlSimple` ([GitHub Repo](https://github.com/Cluain/Lua-Simple-XML-Parser))，用以解析ASR识别结果XML，取出用户输入文本
+
+在流程执行中，使用了一个`while session:ready() do`的循环，除非用户说“退出”或出现异常，否则一直进行识别播报，展示ASR和TTS引擎调用的功能
+
+具体的代码参看仓库对应的脚本文件`stage4-loop.lua`
+
+## 七、总结
+
+以上完成了在CentOS7环境安装FreeSWITCH，并配置百度云ASR和TTS、和进行简单的交互流程

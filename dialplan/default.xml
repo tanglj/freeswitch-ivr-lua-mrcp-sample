@@ -26,7 +26,12 @@
     </extension>
     <extension name="stage3-tts">
       <condition field="destination_number" expression="^1103$">
-	<action application="lua" data="stage3-tts.lua"/>
+      <action application="lua" data="stage3-tts.lua"/>
+      </condition>
+    </extension>
+    <extension name="stage4-loop">
+      <condition field="destination_number" expression="^1104$">
+      <action application="lua" data="stage4-loop.lua"/>
       </condition>
     </extension>
 
